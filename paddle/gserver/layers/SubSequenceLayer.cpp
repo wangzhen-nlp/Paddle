@@ -80,13 +80,35 @@ void SubSequenceLayer::forward(PassType passType) {
 
   const Argument& offsetSeq = getInput(1);
   size_t numSequences2 = offsetSeq.getNumSequences();
-  auto startPositions2 =
-      offsetSeq.sequenceStartPositions->getVector(false);
+  auto offsetStartPositions = offsetSeq.sequenceStartPositions;
+  if (!offsetStartPositions) {
+    ICpuGpuVector::resizeOrCreate(offsetStartPositions,
+                                   numSequences2 + 1, false);
+    int* tgtBuf = offsetStartPositions->getMutableData(false);
+    int offset = 0;
+    for (size_t seqId = 0; seqId < numSequences2; ++seqId) {
+      tgtBuf[seqId] = offset;
+      offset += 1;
+    }
+    tgtBuf[numSequences2] = offset;
+  }
+  auto startPositions2 = offsetStartPositions->getVector(false);
 
   const Argument& sizeSeq = getInput(2);
   size_t numSequences3 = sizeSeq.getNumSequences();
-  auto startPositions3 =
-      sizeSeq.sequenceStartPositions->getVector(false);
+  auto sizeStartPositions = sizeSeq.sequenceStartPositions;
+  if (!sizeStartPositions) {
+    ICpuGpuVector::resizeOrCreate(sizeStartPositions,
+                                   numSequences3 + 1, false);
+    int* tgtBuf = sizeStartPositions->getMutableData(false);
+    int offset = 0;
+    for (size_t seqId = 0; seqId < numSequences3; ++seqId) {
+      tgtBuf[seqId] = offset;
+      offset += 1;
+    }
+    tgtBuf[numSequences3] = offset;
+  }
+  auto startPositions3 = sizeStartPositions->getVector(false);
 
   CHECK_EQ(dim, input.value->getWidth());
 
