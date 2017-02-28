@@ -733,6 +733,19 @@ public:
     LOG(FATAL) << "Not implemented";
   }
 
+  virtual void dotProduct(Matrix& output1, Matrix& output2, real scale = 1.0f) {
+    LOG(FATAL) << "Not implemented";
+  }
+
+  virtual void dotProductDerivative(Matrix& output,
+                                Matrix& prevOut1,
+                                Matrix& prevOut2,
+                                Matrix& prevGrad1,
+                                Matrix& prevGrad2,
+                                real scale = 1.0f) {
+    LOG(FATAL) << "Not implemented";
+  }
+
   /// print out the values of elements to os
   virtual void print(std::ostream& os) const {
     LOG(FATAL) << "Not implemented";
@@ -1555,6 +1568,14 @@ public:
   void cosSim(Matrix& output1, Matrix& output2, real scale);
   void cosSimDerivative(Matrix& output, Matrix& prevOut1, Matrix& prevOut2,
                         Matrix& prevGrad1, Matrix& prevGrad2, real scale);
+
+  void dotProduct(Matrix& output1, Matrix& output2, real scale);
+  void dotProductDerivative(Matrix& output,
+                        Matrix& prevOut1,
+                        Matrix& prevOut2,
+                        Matrix& prevGrad1,
+                        Matrix& prevGrad2,
+                        real scale);
 
   void print(std::ostream& os) const;
   void print(std::ostream& os, size_t height, size_t width) const;

@@ -2602,6 +2602,17 @@ class CosSimLayer(LayerBase):
             'inputs of CosSimLayer must have same dim')
         self.config.cos_scale = cos_scale
 
+@config_layer('dot_product')
+class DotProductLayer(LayerBase):
+    def __init__(self, name, inputs, device=None):
+        super(DotProductLayer, self).__init__(
+            name, 'dot_product', 1, inputs=inputs, device=device)
+        config_assert(len(self.inputs) == 2, 'DotProductLayer must have 2 inputs')
+        config_assert(
+            self.get_input_layer(0).size == self.get_input_layer(1).size,
+            'inputs of DotProductLayer must have same dim')
+        self.config.cos_scale = 1
+
 
 @config_layer('tensor')
 class TensorLayer(LayerBase):

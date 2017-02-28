@@ -3423,6 +3423,71 @@ void CpuMatrix::cosSimDerivative(Matrix& output, Matrix& prevOut1,
   }
 }
 
+void CpuMatrix::dotProduct(Matrix& output1, Matrix& output2, real scale) {
+    size_t numSamples = getHeight();
+    size_t dim = output1.getWidth();
+    CHECK_EQ(getWidth(), 1UL);
+    CHECK_EQ(output1.getHeight(), numSamples);
+    CHECK_EQ(output1.getWidth(), output2.getWidth());
+
+    real* out = getData();
+    const real* x = output1.getData();
+    const real* y = output2.getData();
+    size_t yInc = dim;
+    if (output2.getHeight() == 1LU) {
+        yInc = 0;
+    } else {
+        CHECK_EQ(output2.getHeight(), numSamples);
+    }
+    for (size_t i = 0; i < numSamples; ++i, x += dim, y += yInc) {
+        real xy = 0;
+        for (size_t j = 0; j < dim; ++j) {
+            xy += x[j] * y[j];
+        }
+        out[i] = scale * xy;
+    }
+}
+
+void CpuMatrix::dotProductDerivative(Matrix& output, Matrix& prevOut1,
+                                 Matrix& prevOut2, Matrix& prevGrad1,
+                                 Matrix& prevGrad2, real scale) {
+  CHECK(output.useGpu_ == false) << "Matrix type are not equal";
+
+  CHECK_EQ(getWidth(), 1UL);
+  CHECK_EQ(output.getWidth(), 1UL);
+
+  size_t numSamples = getHeight();
+  CHECK_EQ(output.getHeight(), numSamples);
+  CHECK_EQ(prevOut1.getHeight(), numSamples);
+  CHECK_EQ(prevGrad1.getHeight(), numSamples);
+
+  size_t dim = prevOut1.getWidth();
+  CHECK_EQ(prevOut2.getWidth(), dim);
+  CHECK_EQ(prevGrad1.getWidth(), dim);
+  CHECK_EQ(prevGrad2.getWidth(), dim);
+
+  const real* grad = getData();
+  const real* prevOutX = prevOut1.getData();
+  const real* prevOutY = prevOut2.getData();
+  real* prevGradX = prevGrad1.getData();
+  real* prevGradY = prevGrad2.getData();
+  size_t yInc = dim;
+  if (prevOut2.getHeight() == 1LU) {
+    yInc = 0;
+    CHECK_EQ(prevGrad2.getHeight(), 1LU);
+  } else {
+    CHECK_EQ(prevOut2.getHeight(), numSamples);
+    CHECK_EQ(prevGrad2.getHeight(), numSamples);
+  }
+  for (size_t i = 0; i < numSamples; ++i, prevOutX += dim, prevOutY += yInc,
+              prevGradX += dim, prevGradY += yInc) {
+    for (size_t j = 0; j < dim; ++j) {
+      prevGradX[j] += scale * grad[i] * prevOutY[j];
+      prevGradY[j] += scale * grad[i] * prevOutX[j];
+    }
+  }
+}
+
 void CpuMatrix::sumOfSquares(Matrix& output, Matrix& label) {
   CHECK(output.useGpu_ == false && label.useGpu_ == false)
       << "Matrix type are not equal";
