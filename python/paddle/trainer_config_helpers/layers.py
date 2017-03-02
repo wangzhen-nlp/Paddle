@@ -106,6 +106,7 @@ __all__ = [
     'out_prod_layer',
     'print_layer',
     'spp_layer',
+    'sub_seq'
 ]
 
 
@@ -120,6 +121,7 @@ class LayerType(object):
     GRUMEMORY = "gated_recurrent"
     SEQUENCE_LAST_INSTANCE = "seqlastins"
     SEQUENCE_FIRST_INSTANCE = "seqfirstins"
+    SEQUENCE_SUB_SEQUENCE = "subseq"
     POOLING_MAX = "max"
     POOLING_AVG = 'average'
     FC_LAYER = "fc"
@@ -1288,6 +1290,44 @@ def first_seq(input,
         parents=[input],
         size=input.size)
 
+@wrap_name_default()
+@layer_support()
+def sub_seq(input,
+            offset,
+            size,
+            name=None,
+            agg_level=AggregateLevel.EACH_TIMESTEP,
+            layer_attr=None):
+    """
+    Get Sub Sequence of a sequence.
+
+    :param agg_level: aggregation level
+    :param name: Layer name.
+    :type name: basestring
+    :param input: Input layer name.
+    :type input: LayerOutput
+    :param layer_attr: extra layer attributes.
+    :type layer_attr: ExtraLayerAttribute.
+    :return: LayerOutput object.
+    :rtype: LayerOutput
+    """
+
+    if input.reverse is not None and not input.reverse:
+        logger.warning('You are getting the first instance for a time series,'
+                       ' and it is a normal recurrent layer output. There is no'
+                       ' time series information at all. Maybe you want to use'
+                       ' last_seq instead.')
+
+    Layer(
+        name=name,
+        type=LayerType.SEQUENCE_SUB_SEQUENCE,
+        inputs=[input.name, offset.name, size.name],
+        **ExtraLayerAttribute.to_kwargs(layer_attr))
+    return LayerOutput(
+        name,
+        LayerType.SEQUENCE_SUB_SEQUENCE,
+        parents=[input, offset, size],
+        size=input.size)
 
 class ExpandLevel(object):
     FROM_TIMESTEP = AggregateLevel.EACH_TIMESTEP

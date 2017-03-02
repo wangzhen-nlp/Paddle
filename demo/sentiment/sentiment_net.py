@@ -129,9 +129,16 @@ def stacked_lstm_net(input_dim,
             bias_attr=bias_attr,
             layer_attr=layer_attr)
         inputs = [fc, lstm]
+    
+    offset = data_layer("offset", 2)
+    size = data_layer("size", 2) 
+    fc_sub = sub_seq(inputs[0], offset, size)
+    lstm_sub = sub_seq(inputs[1], offset, size)
+    fc_last = pooling_layer(input=fc_sub, pooling_type=MaxPooling())
+    lstm_last = pooling_layer(input=lstm_sub, pooling_type=MaxPooling())
 
-    fc_last = pooling_layer(input=inputs[0], pooling_type=MaxPooling())
-    lstm_last = pooling_layer(input=inputs[1], pooling_type=MaxPooling())
+    # fc_last = pooling_layer(input=inputs[0], pooling_type=MaxPooling())
+    # lstm_last = pooling_layer(input=inputs[1], pooling_type=MaxPooling())
     output = fc_layer(
         input=[fc_last, lstm_last],
         size=class_dim,
