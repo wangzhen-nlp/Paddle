@@ -178,9 +178,11 @@ REGISTER_LAYER(scatter_agent, ScatterAgentLayer);
 void SequenceGatherAgentLayer::forward(PassType passType) {
   Layer::forward(passType);
   int height = 0;
-  int* starts = output_.subSequenceStartPositions->getMutableData(false);
   IVectorPtr idReal = realLayers_[0]->getOutputLabel();
   if (idReal) {
+    CHECK(output_.subSequenceStartPositions);
+    int* starts =
+        output_.subSequenceStartPositions->getMutableData(false);
     // Gather generator.idsVec
     // if is beam search generation result. Get first result.
     if (idReal->getData()[idReal->getSize() - 1] == -1) {
@@ -205,8 +207,89 @@ void SequenceGatherAgentLayer::forward(PassType passType) {
     }
   } else {
     // Gather output.value, same as GatherAgentLayer
-    CHECK(output_.subSequenceStartPositions);
-    GatherAgentLayer::forward(passType);
+    if (output_.subSequenceStartPositions)
+      GatherAgentLayer::forward(passType);
+    else
+      reformAndForward(passType);
+  }
+}
+void SequenceGatherAgentLayer::reformAndForward(PassType passType) {
+  Layer::forward(passType);
+
+  size_t allIds_num = allIds_->getSize();
+  const int* allIds_data = allIds_->getData();
+  std::vector<int> convertIds(allIds_num);
+  for (size_t i = 0; i < allIds_num; ++i) {
+    convertIds[allIds_data[i]] = i;
+  }
+
+  std::vector<int> convertTable;
+  idIndex_.clear();
+  idIndex_.push_back(0);
+  for (size_t i = 0; i < realLayers_.size(); ++i) {
+    const Argument& output = realLayers_[i]->getOutput();
+    auto startPositions = output.sequenceStartPositions;
+    size_t numSequences = output.getNumSequences();
+    CHECK(startPositions);
+    CHECK_EQ(startPositions->getSize() - 1, numSequences);
+    const int *starts = startPositions->getData(false);
+    for (size_t j = 1; j <= numSequences; ++j)
+        convertTable.push_back(starts[j] - starts[j - 1]);
+    idIndex_.push_back(starts[numSequences]);
+  }
+
+  CHECK_EQ(allIds_num, convertTable.size());
+
+  auto outStartPositions = output_.sequenceStartPositions;
+  size_t outSize = output_.getNumSequences();
+  CHECK(outStartPositions);
+  CHECK_EQ(outStartPositions->getSize() - 1, outSize);
+  const int *outStarts = outStartPositions->getData(false);
+  std::vector<int> seqStarts;
+  std::vector<int> subSeqStarts;
+  seqStarts.push_back(0);
+  subSeqStarts.push_back(0);
+  for (size_t i = 0; i < outSize; ++i) {
+    for (int j = outStarts[i]; j < outStarts[i + 1]; ++j) {
+      auto subSeqLen = convertTable[convertIds[j]];
+      subSeqStarts.push_back(subSeqStarts.back() + subSeqLen);
+    }
+    seqStarts.push_back(subSeqStarts.back());
+  }
+  output_.sequenceStartPositions =
+      ICpuGpuVector::create(seqStarts.size(), false);
+  output_.sequenceStartPositions->
+      copyFrom(seqStarts.data(), seqStarts.size(), false);
+  output_.subSequenceStartPositions =
+      ICpuGpuVector::create(subSeqStarts.size(), false);
+  output_.subSequenceStartPositions->
+      copyFrom(subSeqStarts.data(), subSeqStarts.size(), false);
+
+  std::vector<int> allIds;
+  for (size_t i = 0; i < allIds_num; ++i) {
+    auto start = subSeqStarts[allIds_data[i]];
+    auto end = subSeqStarts[allIds_data[i] + 1];
+    for (int j = start; j < end; ++j)
+      allIds.push_back(j);
+  }
+
+  CHECK_EQ(allIds.size(), subSeqStarts.back());
+
+  allIds_ = IVector::create(allIds.size(), false);
+  allIds_->copyFrom(allIds.data(), allIds.size());
+
+  int height = allIds_->getSize();
+  int width = this->getSize();
+  resetOutput(height, width);
+  idsVec_.resize(idIndex_.size());
+
+  const MatrixPtr& outV = getOutputValue();
+
+  for (size_t i = 0; i < realLayers_.size(); ++i) {
+    const MatrixPtr& realV = realLayers_[i]->getOutputValue();
+    idsVec_[i] = IVector::create(allIds_->getData() + idIndex_[i],
+                                 /* size */ realV->getHeight(), useGpu_);
+    realV->addToRows(*outV, *idsVec_[i]);
   }
 }
 

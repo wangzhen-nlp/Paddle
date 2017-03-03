@@ -104,6 +104,7 @@ public:
   virtual ~SequenceGatherAgentLayer() {}
 
   void forward(PassType passType);
+  void reformAndForward(PassType passType);
   void backward(const UpdateCallback& callback) {
     // same as GatherAgentLayer
     GatherAgentLayer::backward(callback);

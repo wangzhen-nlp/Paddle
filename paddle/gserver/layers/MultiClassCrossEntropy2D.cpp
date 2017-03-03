@@ -35,6 +35,8 @@ bool MultiClassCrossEntropy2D::init(const LayerMap& layerMap,
 }
 
 void MultiClassCrossEntropy2D::forward(PassType passType) {
+  Layer::forward(passType);
+
   const Argument& output = getInput(*getOutputLayer());
   CHECK(output.sequenceStartPositions);
   CHECK(output.subSequenceStartPositions);
@@ -88,8 +90,12 @@ void MultiClassCrossEntropy2D::forward(PassType passType) {
   const int* second = secondValue->getData();
 
   real* cost = getOutputValue()->getData();
+  size_t j = 0;
   for (size_t i = 0; i < numSequences1; ++i) {
-    int pos = substarts[first[i] + starts[i]] + second[i];
+    while (substarts[j] < starts[i])
+      ++j;
+    j += first[i];
+    int pos = substarts[j] + second[i];
     cost[i] = -std::log(out[pos]);
   }
 }
@@ -118,8 +124,12 @@ void MultiClassCrossEntropy2D::backward(const UpdateCallback& callback) {
   const int* second = secondValue->getData();
 
   real* grad = gradValue->getData();
+  size_t j = 0;
   for (size_t i = 0; i < numSequences1; ++i) {
-    int pos = substarts[first[i] + starts[i]] + second[i];
+    while (substarts[j] < starts[i])
+      ++j;
+    j += first[i];
+    int pos = substarts[j] + second[i];
     grad[pos] -= 1 / out[pos];
   }
 }
