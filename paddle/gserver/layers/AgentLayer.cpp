@@ -235,7 +235,7 @@ void SequenceGatherAgentLayer::reformAndForward(PassType passType) {
     const int *starts = startPositions->getData(false);
     for (size_t j = 1; j <= numSequences; ++j)
         convertTable.push_back(starts[j] - starts[j - 1]);
-    idIndex_.push_back(starts[numSequences]);
+    idIndex_.push_back(idIndex_.back() + starts[numSequences]);
   }
 
   CHECK_EQ(allIds_num, convertTable.size());
@@ -274,6 +274,7 @@ void SequenceGatherAgentLayer::reformAndForward(PassType passType) {
   }
 
   CHECK_EQ(allIds.size(), subSeqStarts.back());
+  CHECK_EQ(allIds.size(), idIndex_.back());
 
   allIds_ = IVector::create(allIds.size(), false);
   allIds_->copyFrom(allIds.data(), allIds.size());
