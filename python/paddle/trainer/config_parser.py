@@ -2313,6 +2313,17 @@ class MaxId2DLayer(LayerBase):
             self.set_layer_size(input_layer.size)
 
 
+@config_layer('maxid_order_2d')
+class MaxIdOrder2DLayer(LayerBase):
+    def __init__(self, name, inputs, device=None):
+        super(MaxIdOrder2DLayer, self).__init__(
+            name, 'maxid_order_2d', 0, inputs=inputs, device=device)
+        config_assert(len(self.inputs) == 1, 'MaxIdOrder2DLayer must have 1 input')
+        for input_index in xrange(len(self.inputs)):
+            input_layer = self.get_input_layer(input_index)
+            self.set_layer_size(input_layer.size)
+
+
 @config_layer('eos_id')
 class EosIdLayer(LayerBase):
     def __init__(self, name, inputs, eos_id, device=None):
