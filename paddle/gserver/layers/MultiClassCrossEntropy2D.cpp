@@ -96,6 +96,7 @@ void MultiClassCrossEntropy2D::forward(PassType passType) {
       ++j;
     j += first[i];
     int pos = substarts[j] + second[i];
+    CHECK(out[pos]);
     cost[i] = -std::log(out[pos]);
   }
 }
