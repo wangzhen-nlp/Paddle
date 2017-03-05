@@ -2247,6 +2247,25 @@ class ExpandLayer(LayerBase):
         self.create_bias_parameter(bias, self.config.size)
 
 
+@config_layer('expand_shape')
+class ExpandShapeLayer(LayerBase):
+    def __init__(self,
+                 name,
+                 inputs,
+                 trans_type='non-seq',
+                 device=None,
+                 bias=False):
+        super(ExpandShapeLayer, self).__init__(
+            name, 'expand_shape', 0, inputs=inputs, device=device)
+        config_assert(
+            len(self.inputs) == 2, 'ExpandShapeLayer takes 1 and only 1 input')
+        self.config.trans_type = trans_type
+        for input_index in xrange(len(self.inputs)):
+            input_layer = self.get_input_layer(input_index)
+        self.set_layer_size(self.get_input_layer(0).size)
+        self.create_bias_parameter(bias, self.config.size)
+
+
 @config_layer('featmap_expand')
 class FeatMapExpandLayer(LayerBase):
     def __init__(self, name, inputs, device=None, num_filters=None, bias=False):
