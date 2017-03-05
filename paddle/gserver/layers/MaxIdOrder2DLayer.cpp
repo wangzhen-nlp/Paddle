@@ -53,14 +53,15 @@ public:
       idsValue[i * 2] = 0;
       idsValue[i * 2 + 1] = 0;
       real maxValue = inputValue[starts[i]];
+      while (subStarts[k] < starts[i])
+        ++k;
+      int s = k;
+      CHECK_EQ(subStarts[k], starts[i]);
       for (int j = starts[i] + 1; j < starts[i + 1]; ++j) {
-        while (subStarts[k] < starts[i])
-          ++k;
-        int s = k;
         if (inputValue[j] > maxValue) {
           while (subStarts[k] <= j)
             ++k;
-          if (k - 1 - s < j - subStarts[k - 1]) {
+          if (k - 1 - s <= j - subStarts[k - 1]) {
             idsValue[i * 2] = k - 1 - s;
             idsValue[i * 2 + 1] = j - subStarts[k - 1];
             maxValue = inputValue[j];
