@@ -2258,7 +2258,63 @@ class ExpandShapeLayer(LayerBase):
         super(ExpandShapeLayer, self).__init__(
             name, 'expand_shape', 0, inputs=inputs, device=device)
         config_assert(
-            len(self.inputs) == 2, 'ExpandShapeLayer takes 1 and only 1 input')
+            len(self.inputs) == 1, 'ExpandShapeLayer takes 1 and only 1 input')
+        self.config.trans_type = trans_type
+        for input_index in xrange(len(self.inputs)):
+            input_layer = self.get_input_layer(input_index)
+        self.set_layer_size(self.get_input_layer(0).size)
+        self.create_bias_parameter(bias, self.config.size)
+
+@config_layer('aggregate')
+class AggregateLayer(LayerBase):
+    def __init__(self,
+                 name,
+                 inputs,
+                 trans_type='non-seq',
+                 device=None,
+                 bias=False):
+        super(AggregateLayer, self).__init__(
+            name, 'aggregate', 0, inputs=inputs, device=device)
+        config_assert(
+            len(self.inputs) == 1, 'AggregateLayer takes 1 and only 1 input')
+        self.config.trans_type = trans_type
+        for input_index in xrange(len(self.inputs)):
+            input_layer = self.get_input_layer(input_index)
+        self.set_layer_size(self.get_input_layer(0).size)
+        self.create_bias_parameter(bias, self.config.size)
+
+
+@config_layer('padding')
+class PaddingLayer(LayerBase):
+    def __init__(self,
+                 name,
+                 inputs,
+                 trans_type='non-seq',
+                 device=None,
+                 bias=False):
+        super(PaddingLayer, self).__init__(
+            name, 'padding', 0, inputs=inputs, device=device)
+        config_assert(
+            len(self.inputs) == 1, 'PaddingLayer takes 1 and only 1 input')
+        self.config.trans_type = trans_type
+        for input_index in xrange(len(self.inputs)):
+            input_layer = self.get_input_layer(input_index)
+        self.set_layer_size(self.get_input_layer(0).size)
+        self.create_bias_parameter(bias, self.config.size)
+
+
+@config_layer('transform')
+class TransformLayer(LayerBase):
+    def __init__(self,
+                 name,
+                 inputs,
+                 trans_type="non_seq",
+                 device=None,
+                 bias=False):
+        super(TransformLayer, self).__init__(
+            name, 'transform', 0, inputs=inputs, device=device)
+        config_assert(
+            len(self.inputs) == 1, 'TransformLayer takes 1 and only 1 input')
         self.config.trans_type = trans_type
         for input_index in xrange(len(self.inputs)):
             input_layer = self.get_input_layer(input_index)

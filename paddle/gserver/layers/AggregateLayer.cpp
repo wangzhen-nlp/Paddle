@@ -60,6 +60,7 @@ void AggregateLayer::forward(PassType passType) {
       for (int k = subStarts[j]; k < subStarts[j + 1]; ++k) {
         if (k - subStarts[j] >= (int)res.size())
           res.push_back(1);
+        CHECK(inputs[k]);
         res[k - subStarts[j]] *= inputs[k];
         outputs[k] = res[k - subStarts[j]];
       }
@@ -95,8 +96,11 @@ void AggregateLayer::backward(const UpdateCallback& callback) {
         if (k - subStarts[j] >= (int)res.size())
           res.push_back(0);
         res[k - subStarts[j]] += outputGrad[k] * outputs[k];
+        CHECK(inputs[k]);
         inputGrad[k] = res[k - subStarts[j]] / inputs[k];
       }
+      if (subStarts[j] == 0)
+        break;
     }
     j = s;
   }
