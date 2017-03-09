@@ -62,6 +62,25 @@ void ExpandLayer::forward(PassType passType) {
     // when trans_type = seq, input[1] must hasSubseq
     CHECK_EQ(shapeInput.hasSubseq(), 1UL);
     CHECK_EQ(dataInput.getNumSequences(), shapeInput.getNumSequences());
+    /*
+    if (dataInput.sequenceStartPositions) {
+      CHECK(!dataInput.subSequenceStartPositions);
+      CHECK_EQ(dataInput.getBatchSize(), numSequences);
+      const int* shapeStarts =
+          shapeInput.sequenceStartPositions->getData(false);
+      const int* shapeSubStarts = starts;
+      const int* dataStarts =
+          dataInput.sequenceStartPositions->getData(false);
+      int j = 0;
+      for (int i = 0; i < dataInput.getNumSequences(); ++i) {
+        int seqLen = dataStarts[i + 1] - dataStarts[i];
+        int s = j;
+        while (shapeSubStarts[j] < shapeStarts[i + 1])
+          ++j;
+        CHECK_EQ(j - s, seqLen);
+      }
+    }
+    */
   } else {
     CHECK_EQ(dataInput.getBatchSize(), shapeInput.getNumSequences());
   }
