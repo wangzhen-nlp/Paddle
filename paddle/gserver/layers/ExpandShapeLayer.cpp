@@ -84,7 +84,7 @@ void ExpandShapeLayer::backward(const UpdateCallback& callback) {
   MatrixPtr outputGrad = getOutputGrad();
 
   AsyncGpuBlock asyncGpuBlock;
-  inputGrad->copyFrom(*outputGrad);
+  inputGrad->add(*outputGrad);
 }
 
 }  // namespace paddle

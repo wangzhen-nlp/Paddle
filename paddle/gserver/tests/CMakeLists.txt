@@ -94,3 +94,11 @@ add_test(NAME test_PyDataProvider2
    COMMAND .set_python_path.sh -d ${PROJ_ROOT}/paddle/gserver/tests:${PROJ_ROOT}/python ${CMAKE_CURRENT_BINARY_DIR}/test_PyDataProvider2
         WORKING_DIRECTORY ${PROJ_ROOT}/paddle
 )
+
+add_unittest_without_exec(test_ExpandShape
+        test_ExpandShape.cpp
+        LayerGradUtil.cpp
+        TestUtil.cpp)
+
+add_test(NAME test_ExpandShape
+  COMMAND test_ExpandShape)
