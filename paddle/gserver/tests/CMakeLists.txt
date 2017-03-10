@@ -102,3 +102,11 @@ add_unittest_without_exec(test_ExpandShape
 
 add_test(NAME test_ExpandShape
   COMMAND test_ExpandShape)
+
+add_unittest_without_exec(test_dotProduct
+        test_dotProduct.cpp
+        LayerGradUtil.cpp
+        TestUtil.cpp)
+
+add_test(NAME test_dotProduct
+  COMMAND test_dotProduct)
