@@ -110,3 +110,11 @@ add_unittest_without_exec(test_dotProduct
 
 add_test(NAME test_dotProduct
   COMMAND test_dotProduct)
+
+add_unittest_without_exec(test_AggregateLayer
+        test_AggregateLayer.cpp
+        LayerGradUtil.cpp
+        TestUtil.cpp)
+
+add_test(NAME test_AggregateLayer
+  COMMAND test_AggregateLayer)

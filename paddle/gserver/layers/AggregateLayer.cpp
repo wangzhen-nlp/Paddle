@@ -97,7 +97,7 @@ void AggregateLayer::backward(const UpdateCallback& callback) {
           res.push_back(0);
         res[k - subStarts[j]] += outputGrad[k] * outputs[k];
         CHECK(inputs[k]);
-        inputGrad[k] = res[k - subStarts[j]] / inputs[k];
+        inputGrad[k] += res[k - subStarts[j]] / inputs[k];
       }
       if (subStarts[j] == 0)
         break;
