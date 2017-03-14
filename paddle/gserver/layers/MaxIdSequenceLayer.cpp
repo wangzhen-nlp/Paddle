@@ -16,9 +16,9 @@ limitations under the License. */
 
 namespace paddle {
 
-class MaxIdSequence : public Layer {
+class MaxIdSequenceLayer : public Layer {
 public:
-  explicit MaxIdSequence(const LayerConfig& config) : Layer(config) {}
+  explicit MaxIdSequenceLayer(const LayerConfig& config) : Layer(config) {}
 
   virtual bool init(const LayerMap& layerMap,
                     const ParameterMap& parameterMap) {
@@ -41,14 +41,14 @@ public:
     auto firstPositions =
         first.sequenceStartPositions->getVector(false);
     auto secondPositions =
-        second.SequenceStartPositions->getVector(false);
+        second.sequenceStartPositions->getVector(false);
     size_t numSequences = first.getNumSequences();
     CHECK_EQ(numSequences, second.getNumSequences());
     const int* firstStarts = firstPositions->getData();
     const int* secondStarts = secondPositions->getData();
-    
-    real *firstValue = first.value->getData();
-    real *secondValue = second.value->getData();
+
+    real *firstVal = first.value->getData();
+    real *secondVal = second.value->getData();
 
     IVector::resizeOrCreate(output_.ids, numSequences * 2, false);
     int *idsValue = output_.ids->getData();
@@ -83,19 +83,29 @@ public:
           maxSecondId[j] = maxSecondId[j + 1];
           maxSecondVal[j] = maxSecondVal[j + 1];
         }
-        maxFirstVal[j] *= maxSecondVal[j];
       }
 
-      int maxVal = maxFirstVal[0];
+      int firstId = maxFirstId[seqLen - 1];
+      int secondId = maxSecondId[0];
+
+      for (int j = 0; j < seqLen; ++j)
+        maxFirstVal[j] *= maxSecondVal[j];
+
+      real maxVal = maxFirstVal[0];
       int maxId = 0;
       for (int j = 1; j < seqLen; ++j) {
-        if (maxFristVal[j] > maxVal) {
+        if (maxFirstVal[j] > maxVal) {
           maxVal = maxFirstVal[j];
           maxId = j;
         }
       }
-      idsValue[i * 2] = maxFirstId[j];
-      idsValue[i * 2 + 1] = maxSecondId[j];
+
+      if (firstId <= secondId)
+        CHECK_EQ(firstId, maxId);
+
+      idsValue[i * 2] = maxFirstId[maxId];
+      idsValue[i * 2 + 1] = maxSecondId[maxId];
+
       delete [] maxFirstId;
       delete [] maxFirstVal;
       delete [] maxSecondId;
@@ -106,6 +116,6 @@ public:
   virtual void backward(const UpdateCallback& callback) {}
 };
 
-REGISTER_LAYER(maxid_seq, MaxIdSequence);
+REGISTER_LAYER(maxid_seq, MaxIdSequenceLayer);
 
 }  // namespace paddle

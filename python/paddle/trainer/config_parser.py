@@ -1966,6 +1966,7 @@ define_cost('SoftBinaryClassCrossEntropy', 'soft_binary_class_cross_entropy')
 define_cost('HuberTwoClass', 'huber')
 define_cost('SumCost', 'sum_cost')
 define_cost('MultiClassCrossEntropy2D', 'multi_class_cross_entropy_2d')
+define_cost('IdentityCostLayer', 'identity_cost')
 
 
 @config_layer('hsigmoid')
@@ -2394,6 +2395,17 @@ class MaxIdOrder2DLayer(LayerBase):
         super(MaxIdOrder2DLayer, self).__init__(
             name, 'maxid_order_2d', 0, inputs=inputs, device=device)
         config_assert(len(self.inputs) == 1, 'MaxIdOrder2DLayer must have 1 input')
+        for input_index in xrange(len(self.inputs)):
+            input_layer = self.get_input_layer(input_index)
+            self.set_layer_size(input_layer.size)
+
+
+@config_layer('maxid_seq')
+class MaxIdSequenceLayer(LayerBase):
+    def __init__(self, name, inputs, device=None):
+        super(MaxIdSequenceLayer, self).__init__(
+            name, 'maxid_seq', 0, inputs=inputs, device=device)
+        config_assert(len(self.inputs) == 2, 'MaxIdSequenceLayer must have 2 input')
         for input_index in xrange(len(self.inputs)):
             input_layer = self.get_input_layer(input_index)
             self.set_layer_size(input_layer.size)
