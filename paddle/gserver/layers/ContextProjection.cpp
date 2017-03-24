@@ -78,8 +78,9 @@ void ContextProjection::forward() {
   CHECK(in_->value);
   CHECK(in_->sequenceStartPositions);
 
-  auto startPositions =
-    in_->sequenceStartPositions->getVector(useGpu_);
+  auto seqStarts = in_->subSequenceStartPositions ?
+      in_->subSequenceStartPositions : in_->sequenceStartPositions;
+  auto startPositions = seqStarts->getVector(useGpu_);
 
   int64_t inputDim = in_->value->getWidth();
   int64_t dim = out_->value->getWidth();
@@ -94,7 +95,7 @@ void ContextProjection::forward() {
 
   if (state_ && config_.context_start() < 0) {
     CHECK_EQ(1, in_->getNumSequences());
-    const int* starts = in_->sequenceStartPositions->getData(false);
+    const int* starts = seqStarts->getData(false);
     int length = starts[1] - starts[0];
     if (-config_.context_start() <= length) {
       MatrixPtr sub = in_->value->subMatrix(starts[1] + config_.context_start(),
@@ -116,8 +117,9 @@ void ContextProjection::backward(const UpdateCallback& callback) {
   int64_t inputDim = in_->value->getWidth();
   int64_t dim = out_->value->getWidth();
   CHECK_EQ(dim, inputDim * config_.context_length());
-  auto startPositions =
-    in_->sequenceStartPositions->getVector(useGpu_);
+  auto seqStarts = in_->subSequenceStartPositions ?
+      in_->subSequenceStartPositions : in_->sequenceStartPositions;
+  auto startPositions = seqStarts->getVector(useGpu_);
 
   REGISTER_TIMER_INFO("ContextProjectionBackward", getName().c_str());
   bool isPadding = config_.trainable_padding();
