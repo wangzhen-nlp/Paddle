@@ -113,6 +113,27 @@ inline void hl_cossim_derivative(real* grad,
                                  int input2_height,
                                  real scale) {}
 
+inline void hl_dotproduct(real* output,
+                          real* input1,
+                          real* input2,
+                          int width,
+                          int input1_height,
+                          int input2_height,
+                          real scale) {}
+
+
+inline void hl_dotproduct_derivative(real* grad,
+                                     real* output,
+                                     real* prevOutX,
+                                     real* prevOutY,
+                                     real* prevGradX,
+                                     real* prevGradY,
+                                     int width,
+                                     int input1_height,
+                                     int input2_height,
+                                     real scale) {}
+
+
 inline void hl_matrix_add_shared_bias(real* A_d,
                                       real* B_d,
                                       const int channel,

@@ -856,6 +856,51 @@ void GpuMatrix::cosSimDerivative(Matrix& output, Matrix& prevOut1,
                        prevOut1.getHeight(), prevOut2.getHeight(), scale);
 }
 
+void GpuMatrix::dotProduct(Matrix& output1, Matrix& output2, real scale) {
+  CHECK(output1.useGpu_ == true && output2.useGpu_ == true)
+      << "Matrix type are not equal";
+  size_t numSamples = getHeight();
+  size_t dim = output1.getWidth();
+  CHECK_EQ(getWidth(), 1UL);
+  CHECK_EQ(output1.getHeight(), numSamples);
+  CHECK_EQ(output1.getWidth(), output2.getWidth());
+  real* out = getData();
+  real* x = output1.getData();
+  real* y = output2.getData();
+  hl_dotproduct(out, x, y, dim,
+    output1.getHeight(), output2.getHeight(), scale);
+}
+void GpuMatrix::dotProductDerivative(Matrix& output, Matrix& prevOut1,
+                                 Matrix& prevOut2, Matrix& prevGrad1,
+                                 Matrix& prevGrad2, real scale) {
+  CHECK(output.useGpu_ == true && prevOut1.useGpu_ == true &&
+        prevOut2.useGpu_ == true && prevGrad1.useGpu_ == true &&
+        prevGrad2.useGpu_ == true)
+      << "Matrix type are not equal";
+  CHECK_EQ(getWidth(), 1UL);
+  CHECK_EQ(output.getWidth(), 1UL);
+
+  size_t numSamples = getHeight();
+  CHECK_EQ(output.getHeight(), numSamples);
+  CHECK_EQ(prevOut1.getHeight(), numSamples);
+  CHECK_EQ(prevGrad1.getHeight(), numSamples);
+
+  size_t dim = prevOut1.getWidth();
+  CHECK_EQ(prevOut2.getWidth(), dim);
+  CHECK_EQ(prevGrad1.getWidth(), dim);
+  CHECK_EQ(prevGrad2.getWidth(), dim);
+
+  real* grad = getData();
+  real* out = output.getData();
+  real* prevOutX = prevOut1.getData();
+  real* prevOutY = prevOut2.getData();
+  real* prevGradX = prevGrad1.getData();
+  real* prevGradY = prevGrad2.getData();
+  hl_dotproduct_derivative(grad, out, prevOutX, prevOutY,
+    prevGradX, prevGradY, dim,
+    prevOut1.getHeight(), prevOut2.getHeight(), scale);
+}
+
 void GpuMatrix::randomizeUniform() {
   CHECK(isContiguous());
   real* data = data_;

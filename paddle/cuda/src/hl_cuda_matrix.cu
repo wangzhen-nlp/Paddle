@@ -755,6 +755,141 @@ void hl_cossim_derivative(real* grad,
   CHECK_SYNC("hl_cossim_derivate failed");
 }
 
+template<int blockSize>
+__global__ void KeDotProduct(real* output,
+                             real* input1,
+                             real* input2,
+                             int width,
+                             int input1_height,
+                             int input2_height,
+                             real scale) {
+  const int ty = blockIdx.y;
+  int tid = threadIdx.x;
+
+  __shared__ real xy[blockSize];
+
+  xy[tid] = 0.0;
+  __syncthreads();
+
+  input1 += ty * width;
+  if (input2_height > 1) {
+    input2 += ty * width;
+  }
+  for (int index = tid; index < width; index += blockSize) {
+    real x = input1[index];
+    real y = input2[index];
+    xy[tid] += x * y;
+  }
+  __syncthreads();
+
+  for (int s = blockSize / 2; s > 0; s >>= 1) {
+    if (tid < s) {
+      xy[tid] += xy[tid + s];
+    }
+    __syncthreads();
+  }
+  if (tid == 0) {
+    output[ty] = scale * xy[0];
+  }
+}
+
+void hl_dotproduct(real* output,
+                   real* input1,
+                   real* input2,
+                   int width,
+                   int input1_height,
+                   int input2_height,
+                   real scale) {
+  CHECK_NOTNULL(output);
+  CHECK_NOTNULL(input1);
+  CHECK_NOTNULL(input2);
+  const int blockSize = 256;
+  dim3 threads(blockSize, 1);
+  dim3 grid(1, input1_height);
+
+  KeDotProduct<blockSize><<<grid, threads, 0, STREAM_DEFAULT>>>
+    (output, input1, input2, width, input1_height, input2_height, scale);
+  CHECK_SYNC("hl_dotproduct failed");
+}
+
+template<int blockSize>
+__global__ void KeDotProductDerivative(real* grad,
+                                       real* output,
+                                       real* prevOutX,
+                                       real* prevOutY,
+                                       real* prevGradX,
+                                       real* prevGradY,
+                                       int width,
+                                       int input1_height,
+                                       int input2_height,
+                                       real scale) {
+  const int ty = blockIdx.y;
+  int tid = threadIdx.x;
+
+  __shared__ real xy[blockSize];
+
+  xy[tid] = 0.0;
+  __syncthreads();
+
+  prevOutX += ty * width;
+  prevGradX += ty * width;
+  if (input2_height > 1) {
+    prevOutY += ty * width;
+    prevGradY += ty * width;
+  }
+  for (int index = tid; index < width; index += blockSize) {
+    real x = prevOutX[index];
+    real y = prevOutY[index];
+    xy[tid] += x * y;
+  }
+  __syncthreads();
+
+  for (int s = blockSize / 2; s > 0; s >>= 1) {
+    if (tid < s) {
+      xy[tid] += xy[tid + s];
+    }
+    __syncthreads();
+  }
+  for (int index = tid; index < width; index += blockSize) {
+    prevGradX[index] +=
+      scale * grad[ty] * prevOutY[index];
+    if (input2_height > 1) {
+      prevGradY[index] +=
+        scale * grad[ty] * prevOutX[index];
+    } else {
+      paddle::paddleAtomicAdd(prevGradY + index,
+        scale * grad[ty] * prevOutX[index]);
+    }
+  }
+}
+
+void hl_dotproduct_derivative(real* grad,
+                              real* output,
+                              real* prevOutX,
+                              real* prevOutY,
+                              real* prevGradX,
+                              real* prevGradY,
+                              int width,
+                              int input1_height,
+                              int input2_height,
+                              real scale) {
+  CHECK_NOTNULL(grad);
+  CHECK_NOTNULL(output);
+  CHECK_NOTNULL(prevOutX);
+  CHECK_NOTNULL(prevOutY);
+  CHECK_NOTNULL(prevGradX);
+  CHECK_NOTNULL(prevGradY);
+  const int blockSize = 256;
+  dim3 threads(blockSize, 1);
+  dim3 grid(1, input1_height);
+  KeDotProductDerivative<blockSize><<<grid, threads, 0, STREAM_DEFAULT>>>
+    (grad, output, prevOutX, prevOutY, prevGradX, prevGradY, width,
+        input1_height, input2_height, scale);
+  CHECK_SYNC("hl_dotproduct_derivate failed");
+}
+
+
+
 __global__ void KeMatrixAddSharedBias(real* A,
                                       real* B,
                                       const int channel,

@@ -259,6 +259,25 @@ extern void hl_cossim_derivative(real* grad,
                                  int input2_height,
                                  real scale);
 
+extern void hl_dotproduct(real* output,
+                          real* input1,
+                          real* input2,
+                          int width,
+                          int input1_height,
+                          int input2_height,
+                          real scale);
+
+extern void hl_dotproduct_derivative(real* grad,
+                                     real* output,
+                                     real* prevOutX,
+                                     real* prevOutY,
+                                     real* prevGradX,
+                                     real* prevGradY,
+                                     int width,
+                                     int input1_height,
+                                     int input2_height,
+                                     real scale);
+
 /**
  * @brief   Matrix addition: A_d[i][j] += scale * B_d[j/channel].
  *

@@ -1220,6 +1220,14 @@ public:
   void cosSimDerivative(Matrix& output, Matrix& prevOut1, Matrix& prevOut2,
                         Matrix& prevGrad1, Matrix& prevGrad2, real scale);
 
+  void dotProduct(Matrix& output1, Matrix& output2, real scale);
+  void dotProductDerivative(Matrix& output,
+                        Matrix& prevOut1,
+                        Matrix& prevOut2,
+                        Matrix& prevGrad1,
+                        Matrix& prevGrad2,
+                        real scale);
+
   virtual void print(std::ostream& os) const;
   virtual void print(std::ostream& os, size_t height, size_t width) const;
 
