@@ -2466,6 +2466,30 @@ class SequenceFirstInstanceLayer(SequenceLastInstanceLayer):
         self.config.select_first = True
 
 
+@config_layer('seqoneins')
+class SequenceOneInstanceLayer(LayerBase):
+    def __init__(self,
+                 name,
+                 inputs,
+                 active_type='linear',
+                 trans_type='non-seq',
+                 device=None,
+                 bias=False):
+        super(SequenceOneInstanceLayer, self).__init__(
+            name,
+            'seqoneins',
+            0,
+            inputs=inputs,
+            device=device,
+            active_type=active_type)
+        config_assert(
+            len(inputs) == 2, 'SequenceOneInstanceLayer must have 2 input')
+        self.config.trans_type = trans_type
+        input_layer0 = self.get_input_layer(0)
+        size = input_layer0.size
+        self.set_layer_size(size)
+        self.create_bias_parameter(bias, size)
+
 @config_layer('seqconcat')
 class SequenceConcatLayer(LayerBase):
     def __init__(self,
