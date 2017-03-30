@@ -133,8 +133,11 @@ void LstmLayer::forward(PassType passType) {
   int batchSize = input.getBatchSize();
   resetOutput(batchSize, getSize());
   CHECK_EQ(getSize() * 4, input.value->getWidth());
-  size_t numSequences = input.getNumSequences();
-  const int *starts = input.sequenceStartPositions->getData(false);
+  size_t numSequences = input.subSequenceStartPositions ?
+      input.getNumSubSequences() : input.getNumSequences();
+  auto seqStarts = input.subSequenceStartPositions ?
+      input.subSequenceStartPositions : input.sequenceStartPositions;
+  const int *starts = seqStarts->getData(false);
   CHECK_EQ(starts[numSequences], batchSize);
 
   Matrix::resizeOrCreate(gate_.value,
@@ -171,7 +174,7 @@ void LstmLayer::forward(PassType passType) {
     if (!useSeqParallel_) {
       forwardBatch(batchSize, numSequences, starts, input.value);
     } else {
-      const int* starts = input.sequenceStartPositions->getData(useGpu_);
+      const int* starts = seqStarts->getData(useGpu_);
       forwardSeqParallel(batchSize, numSequences, starts, input.value);
     }
   }
@@ -185,7 +188,8 @@ void LstmLayer::backward(const UpdateCallback &callback) {
   const Argument &input = getInput(0);
   CHECK(input.sequenceStartPositions);
   int batchSize = input.getBatchSize();
-  size_t numSequences = input.getNumSequences();
+  size_t numSequences = input.subSequenceStartPositions ?
+      input.getNumSubSequences() : input.getNumSequences();
 
   Matrix::resizeOrCreate(gate_.grad,
                          /* height= */ batchSize, getSize() * 4,
@@ -197,15 +201,16 @@ void LstmLayer::backward(const UpdateCallback &callback) {
                          /* height= */ batchSize, getSize(), /* trans= */ false,
                          useGpu_);
   state_.grad->zero();
-
-  const int *starts = input.sequenceStartPositions->getData(false);
+  auto seqStarts = input.subSequenceStartPositions ?
+      input.subSequenceStartPositions : input.sequenceStartPositions;
+  const int *starts = seqStarts->getData(false);
   if (!useBatch_) {
     backwardSequence(batchSize, numSequences, starts, input.grad);
   } else {
     if (!useSeqParallel_) {
       backwardBatch(batchSize, numSequences, starts, input.grad);
     } else {
-      const int* starts = input.sequenceStartPositions->getData(useGpu_);
+      const int* starts = seqStarts->getData(useGpu_);
       backwardSeqParallel(batchSize, numSequences, starts, input.grad);
     }
   }
