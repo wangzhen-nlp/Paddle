@@ -83,7 +83,7 @@ void SubSequenceLayer::forward(PassType passType) {
   auto offsetStartPositions = offsetSeq.sequenceStartPositions;
   if (!offsetStartPositions) {
     ICpuGpuVector::resizeOrCreate(offsetStartPositions,
-                                   numSequences2 + 1, false);
+                                   numSequences2 + 1, useGpu_);
     int* tgtBuf = offsetStartPositions->getMutableData(false);
     int offset = 0;
     for (size_t seqId = 0; seqId < numSequences2; ++seqId) {
@@ -99,7 +99,7 @@ void SubSequenceLayer::forward(PassType passType) {
   auto sizeStartPositions = sizeSeq.sequenceStartPositions;
   if (!sizeStartPositions) {
     ICpuGpuVector::resizeOrCreate(sizeStartPositions,
-                                   numSequences3 + 1, false);
+                                   numSequences3 + 1, useGpu_);
     int* tgtBuf = sizeStartPositions->getMutableData(false);
     int offset = 0;
     for (size_t seqId = 0; seqId < numSequences3; ++seqId) {
@@ -131,13 +131,10 @@ void SubSequenceLayer::forward(PassType passType) {
   CHECK_EQ(offsetValue->getSize(), numSequences1);
   CHECK_EQ(sizeValue->getSize(), numSequences1);
 
-  int* offsets = offsetValue->getData();
-  int* sizes = sizeValue->getData();
-
   // get total height of output
   size_t height = 0;
   for (size_t seqId = 0; seqId < numSequences1; seqId++) {
-    height += sizes[seqId];
+    height += sizeValue->getElement(seqId);
   }
 
   // reset output
@@ -155,8 +152,8 @@ void SubSequenceLayer::forward(PassType passType) {
     size_t offsetOut = 0;
     size_t size = 0;
     for (size_t seqId = 0; seqId < numSequences1; ++seqId) {
-      offsetIn = starts1[seqId] + offsets[seqId];
-      size = sizes[seqId];
+      offsetIn = starts1[seqId] + offsetValue->getElement(seqId);
+      size = sizeValue->getElement(seqId);
 
       outputValue->subMatrix(offsetOut, size, tmpDest_)
           ->assign(*(inputValue->subMatrix(offsetIn, size, tmpSrc_)));
@@ -166,13 +163,13 @@ void SubSequenceLayer::forward(PassType passType) {
 
     // modify the sequenceStartPositions
     ICpuGpuVector::resizeOrCreate(output_.sequenceStartPositions,
-                                   numSequences1 + 1, false);
+                                   numSequences1 + 1, useGpu_);
 
     int* tgtBuf = output_.sequenceStartPositions->getMutableData(false);
     int offset = 0;
     for (size_t seqId = 0; seqId < numSequences1; ++seqId) {
       tgtBuf[seqId] = offset;
-      offset += sizes[seqId];
+      offset += sizeValue->getElement(seqId);
     }
     tgtBuf[numSequences1] = offset;
   }
@@ -207,8 +204,6 @@ void SubSequenceLayer::backward(const UpdateCallback& callback) {
   IVectorPtr offsetValue = getInput(1).ids;
   IVectorPtr sizeValue = getInput(2).ids;
 
-  int* offsets = offsetValue->getData();
-  int* sizes = sizeValue->getData();
   {
     AsyncGpuBlock asyncGpuBlock;
     REGISTER_TIMER_INFO("SubSequenceLayerBackward", getName().c_str());
@@ -217,8 +212,8 @@ void SubSequenceLayer::backward(const UpdateCallback& callback) {
     int offsetOut = 0;
     int size = 0;
     for (size_t seqId = 0; seqId < numSequences1; ++seqId) {
-      offsetIn = starts1[seqId] + offsets[seqId];
-      size = sizes[seqId];
+      offsetIn = starts1[seqId] + offsetValue->getElement(seqId);
+      size = sizeValue->getElement(seqId);
 
       inputGrad1->subMatrix(offsetIn, size, tmpDest_)
           ->add(*(outputGrad->subMatrix(offsetOut, size, tmpSrc_)));
