@@ -30,6 +30,8 @@ protected:
   MatrixPtr tmpSrc_;
   MatrixPtr tmpDest_;
 
+  IVectorPtr offsetIds_;
+
 public:
   explicit SequenceOneInstanceLayer(const LayerConfig& config) :
     Layer(config) {}

@@ -63,8 +63,9 @@ void SequenceOneInstanceLayer::forward(PassType passType) {
   CHECK_EQ(startPositions->getData()[newBatchSize_], input.getBatchSize());
   CHECK_EQ(newBatchSize_, startPositions->getSize() - 1);
 
-  auto offsetValue = offset.ids;
-  CHECK_EQ(newBatchSize_, offsetValue->getSize());
+  IVector::resizeOrCreate(offsetIds_, newBatchSize_, false);
+  offsetIds_->copyFrom(*offset.ids);
+  int *offsets = offsetIds_->getData();
 
   resetOutput(newBatchSize_, dim);
   if (type_) {
@@ -84,7 +85,7 @@ void SequenceOneInstanceLayer::forward(PassType passType) {
     REGISTER_TIMER_INFO("SequenceOneInstanceLayerForward", getName().c_str());
 
     for (size_t seqId = 0; seqId < newBatchSize_; ++seqId) {
-      int insId = offsetValue->get(seqId) + starts[seqId];
+      int insId = offsets[seqId] + starts[seqId];
 
       outputValue->subMatrix(seqId, 1, tmpDest_)
           ->assign(*(inputValue->subMatrix(insId, 1, tmpSrc_)));
@@ -109,20 +110,20 @@ void SequenceOneInstanceLayer::backward(const UpdateCallback& callback) {
     biases_->getParameterPtr()->incUpdate(callback);
   }
 
-  const Argument& offset = getInput(1);
-  auto offsetValue = offset.ids;
   MatrixPtr inputGrad = getInputGrad(0);
   MatrixPtr outputGrad = getOutputGrad();
 
   const int* starts = startPositions_->getData(false);
   size_t numSequences = startPositions_->getSize() - 1;
 
+  int *offsets = offsetIds_->getData();
+
   if (inputGrad) {
     AsyncGpuBlock asyncGpuBlock;
     REGISTER_TIMER_INFO("SequenceOneInstanceLayerBackward", getName().c_str());
 
     for (size_t seqId = 0; seqId < numSequences; ++seqId) {
-      int insId = offsetValue->get(seqId) + starts[seqId];
+      int insId = offsets[seqId] + starts[seqId];
 
       inputGrad->subMatrix(insId, 1, tmpDest_)
           ->add(*(outputGrad->subMatrix(seqId, 1, tmpSrc_)));
