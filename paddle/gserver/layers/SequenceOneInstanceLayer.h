@@ -25,6 +25,7 @@ protected:
   std::unique_ptr<Weight> biases_;
   enum SequenceLevel { kNonSeq = 0, kSeq = 1 };
   size_t newBatchSize_;
+  ICpuGpuVectorPtr startPositions_;
 
   MatrixPtr tmpSrc_;
   MatrixPtr tmpDest_;
