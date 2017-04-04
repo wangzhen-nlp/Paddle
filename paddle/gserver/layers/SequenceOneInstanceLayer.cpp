@@ -62,9 +62,12 @@ void SequenceOneInstanceLayer::forward(PassType passType) {
   auto startPositions = startPositions_->getVector(false);
   CHECK_EQ(startPositions->getData()[newBatchSize_], input.getBatchSize());
   CHECK_EQ(newBatchSize_, startPositions->getSize() - 1);
-
-  IVector::resizeOrCreate(offsetIds_, newBatchSize_, false);
-  offsetIds_->copyFrom(*offset.ids);
+  if (useGpu_) {
+    IVector::resizeOrCreate(offsetIds_, newBatchSize_, false);
+    offsetIds_->copyFrom(*offset.ids);
+  } else {
+    offsetIds_ = offset.ids;
+  }
   int *offsets = offsetIds_->getData();
 
   resetOutput(newBatchSize_, dim);

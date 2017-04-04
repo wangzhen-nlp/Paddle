@@ -80,46 +80,14 @@ void SubSequenceLayer::forward(PassType passType) {
 
   const Argument& offsetSeq = getInput(1);
   size_t numSequences2 = offsetSeq.getNumSequences();
-  auto offsetStartPositions = offsetSeq.sequenceStartPositions;
-  if (!offsetStartPositions) {
-    ICpuGpuVector::resizeOrCreate(offsetStartPositions,
-                                   numSequences2 + 1, false);
-    int* tgtBuf = offsetStartPositions->getMutableData(false);
-    int offset = 0;
-    for (size_t seqId = 0; seqId < numSequences2; ++seqId) {
-      tgtBuf[seqId] = offset;
-      offset += 1;
-    }
-    tgtBuf[numSequences2] = offset;
-  }
-  auto startPositions2 = offsetStartPositions->getVector(false);
 
   const Argument& sizeSeq = getInput(2);
   size_t numSequences3 = sizeSeq.getNumSequences();
-  auto sizeStartPositions = sizeSeq.sequenceStartPositions;
-  if (!sizeStartPositions) {
-    ICpuGpuVector::resizeOrCreate(sizeStartPositions,
-                                   numSequences3 + 1, false);
-    int* tgtBuf = sizeStartPositions->getMutableData(false);
-    int offset = 0;
-    for (size_t seqId = 0; seqId < numSequences3; ++seqId) {
-      tgtBuf[seqId] = offset;
-      offset += 1;
-    }
-    tgtBuf[numSequences3] = offset;
-  }
-  auto startPositions3 = sizeStartPositions->getVector(false);
 
   CHECK_EQ(dim, input.value->getWidth());
 
   CHECK_EQ(startPositions1->getData()[numSequences1], input.getBatchSize());
   CHECK_EQ(numSequences1, startPositions1->getSize() - 1);
-
-  CHECK_EQ(startPositions2->getData()[numSequences2], offsetSeq.getBatchSize());
-  CHECK_EQ(numSequences2, startPositions2->getSize() - 1);
-
-  CHECK_EQ(startPositions3->getData()[numSequences3], sizeSeq.getBatchSize());
-  CHECK_EQ(numSequences3, startPositions3->getSize() - 1);
 
   CHECK_EQ(numSequences1, numSequences2);
   CHECK_EQ(numSequences2, numSequences3);
