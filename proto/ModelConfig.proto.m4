@@ -413,6 +413,10 @@ sinclude(`ModelConfigLayer.proto.m4')
   // to string and reinterpreted in the user's own layer implementation.  
   optional string user_arg = 49;
 
+  // for max sequence id plus
+  optional uint32 interval_width = 50;
+  optional uint32 top_k = 51;
+
 }
 
 message EvaluatorConfig {

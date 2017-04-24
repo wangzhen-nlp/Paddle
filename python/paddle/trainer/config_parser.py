@@ -2411,6 +2411,19 @@ class MaxIdSequenceLayer(LayerBase):
             self.set_layer_size(input_layer.size)
 
 
+@config_layer('maxid_seq_plus')
+class MaxIdSequencePlusLayer(LayerBase):
+    def __init__(self, name, inputs, interval_width, top_k, device=None):
+        super(MaxIdSequencePlusLayer, self).__init__(
+            name, 'maxid_seq_plus', 0, inputs=inputs, device=device)
+        config_assert(len(self.inputs) == 2, 'MaxIdSequencePlusLayer must have 2 input')
+        for input_index in xrange(len(self.inputs)):
+            input_layer = self.get_input_layer(input_index)
+            self.set_layer_size(input_layer.size)
+        self.config.interval_width = interval_width
+        self.config.top_k = top_k
+
+
 @config_layer('eos_id')
 class EosIdLayer(LayerBase):
     def __init__(self, name, inputs, eos_id, device=None):
